@@ -1,0 +1,883 @@
+/* ============================================
+   北陸 + 東京 12 日旅遊 — 手機優先樣式
+   ============================================ */
+
+:root {
+  --bg: #faf7f2;
+  --ink: #1a2332;
+  --ink-soft: #4b5563;
+  --muted: #8b8f97;
+  --line: #e7e2d8;
+  --card: #ffffff;
+  --accent: #c54a3f;      /* 朱紅 — 主強調 */
+  --accent-soft: #fde6e2;
+  --mountain: #4a7a93;    /* 山藍 — 交通/移動 */
+  --mountain-soft: #e3edf3;
+  --warn: #b8741a;        /* 琥珀 — 注意 */
+  --warn-soft: #fbeed3;
+  --ok: #2f7a4a;          /* 綠 — 已預約 */
+  --ok-soft: #d8ead8;
+  --meal: #8e5589;        /* 葡萄紫 — 餐廳 */
+  --meal-soft: #f4ebf3;
+  --star: #b8860b;
+  --shadow: 0 2px 8px rgba(28, 35, 50, 0.06);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 250px;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+    "Noto Sans JP", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei",
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ============================================
+   Header — 固定在最上
+   ============================================ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(250, 247, 242, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 10px 14px 8px;
+}
+
+.site-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+
+.site-title h1 {
+  font-size: 15px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.site-title .dates {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   Day nav v4 — 每列共用色條，跨日同色直接合併
+   ============================================ */
+.day-nav-v4 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-row {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.day-row .day-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.day-row .day-cell {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 2px 27px;       /* 底部留 22px 色條 + 5px 視覺緩衝 */
+  border-right: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 0.15s;
+}
+.day-row .day-cell:last-child {
+  border-right: none;
+}
+.day-row .day-cell:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.day-row .day-cell.active {
+  background: var(--ink-soft);
+  color: #fff;
+}
+.day-row .day-cell.active .d-date {
+  color: rgba(255, 255, 255, 0.85);
+}
+.day-row .day-cell .d-num {
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.day-row .day-cell .d-date {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.day-row .day-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  pointer-events: none;          /* 點擊穿透到底下的 day-cell */
+}
+.day-row .day-bar .seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.day-row .day-bar .seg[data-r="shirakawa"] {
+  font-size: 8.5px;     /* 白川鄉 三字壓縮，單格寬度 1/12 */
+  letter-spacing: -0.5px;
+}
+
+/* ============================================
+   區域配色 (9 色)
+   ============================================ */
+[data-r="kanazawa"]  { background: #c54a3f; }  /* 金澤   朱紅   */
+[data-r="tateyama"]  { background: #6b8fa8; }  /* 立山   山藍   */
+[data-r="kurobe"]    { background: #2d4f6b; }  /* 黑部   深湖藍 */
+[data-r="toyama"]    { background: #4a8a6a; }  /* 富山   海綠   */
+[data-r="shirakawa"] { background: #d9a04a; }  /* 白川鄉 茅黃   */
+[data-r="takayama"]  { background: #8a5d2a; }  /* 高山   木褐   */
+[data-r="himi"]      { background: #4a8590; }  /* 冰見   港青   */
+[data-r="tokyo"]     { background: #836b9c; }  /* 東京   都市紫 */
+[data-r="transit"]   { background: #9aa0a8; }  /* 移動   中性灰 */
+
+/* ============================================
+   區域對照圖例
+   ============================================ */
+.region-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  padding: 6px 2px 2px;
+  border-top: 1px dashed var(--line);
+}
+.region-legend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.02em;
+}
+.region-legend .lg i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Day card (overview list) — 左側顏色條
+   ============================================ */
+.day-card.region-kanazawa  { border-left: 4px solid #c54a3f; }
+.day-card.region-kanazawa  .num { color: #c54a3f; }
+.day-card.region-tateyama  { border-left: 4px solid #6b8fa8; }
+.day-card.region-tateyama  .num { color: #6b8fa8; }
+.day-card.region-kurobe    { border-left: 4px solid #2d4f6b; }
+.day-card.region-kurobe    .num { color: #2d4f6b; }
+.day-card.region-toyama    { border-left: 4px solid #4a8a6a; }
+.day-card.region-toyama    .num { color: #4a8a6a; }
+.day-card.region-shirakawa { border-left: 4px solid #d9a04a; }
+.day-card.region-shirakawa .num { color: #d9a04a; }
+.day-card.region-takayama  { border-left: 4px solid #8a5d2a; }
+.day-card.region-takayama  .num { color: #8a5d2a; }
+.day-card.region-himi      { border-left: 4px solid #4a8590; }
+.day-card.region-himi      .num { color: #4a8590; }
+.day-card.region-tokyo     { border-left: 4px solid #836b9c; }
+.day-card.region-tokyo     .num { color: #836b9c; }
+.day-card.region-transit   { border-left: 4px solid #9aa0a8; }
+.day-card.region-transit   .num { color: #9aa0a8; }
+
+/* Sub pages tabs */
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-bottom: 2px;
+}
+.page-tabs a {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  background: transparent;
+}
+.page-tabs a.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+/* ============================================
+   Main container
+   ============================================ */
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 14px 60px;
+}
+
+/* ============================================
+   Hero / 總覽
+   ============================================ */
+.hero {
+  text-align: center;
+  padding: 12px 0 24px;
+}
+.hero h2 {
+  font-size: 22px;
+  margin: 0 0 4px;
+  letter-spacing: 0.02em;
+}
+.hero .sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 16px 0 28px;
+}
+
+.ov-item {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  border: 1px solid var(--line);
+}
+.ov-item .label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ov-item .value {
+  font-size: 14px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.day-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.day-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: all 0.15s;
+}
+.day-card:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+  text-decoration: none;
+}
+
+.day-card .num {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+}
+.day-card .info { flex: 1; min-width: 0; }
+.day-card .d-date {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.day-card .d-theme {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.day-card .d-hotel {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+.day-card .arrow { color: var(--muted); }
+
+/* ============================================
+   Day section
+   ============================================ */
+.day-section {
+  margin-bottom: 36px;
+}
+
+.day-header {
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.day-header .d-line1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.day-header .d-num {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.day-header .d-date {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+.day-header .d-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+.day-header .d-theme {
+  font-size: 19px;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.day-header .d-hotel {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+  line-height: 1.2;
+  padding-bottom: 2px;
+}
+
+/* 早/中/晚 區塊標題 */
+.seg-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--mountain);
+  margin: 22px 0 8px;
+  padding-left: 12px;
+  border-left: 3px solid var(--mountain);
+  text-transform: uppercase;
+}
+
+/* ============================================
+   Weather block — 每日天氣 + 衣物建議
+   ============================================ */
+.weather {
+  background: #eef3f8;
+  border: 1px solid #d2dde8;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.weather .w-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  padding: 2px 0;
+  font-size: 13px;
+}
+.weather .w-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  flex: 0 0 auto;
+  min-width: 90px;
+  letter-spacing: 0.02em;
+}
+.weather .w-cond {
+  flex: 1;
+  font-weight: 500;
+  color: var(--ink);
+  min-width: 120px;
+}
+.weather .w-temp {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+.weather .w-advice {
+  font-size: 13px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #d2dde8;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.weather .w-advice strong {
+  color: var(--ink);
+}
+.weather .w-meta {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+  font-style: italic;
+}
+
+.weather.warn {
+  background: #fdf0e8;
+  border-color: #f0c8a4;
+}
+.weather.warn .w-cond { color: #8b3a0a; }
+.weather.warn .w-advice { border-top-color: #f0c8a4; }
+
+@media (max-width: 480px) {
+  .weather .w-time { min-width: 100%; }
+  .weather .w-row { gap: 2px 8px; }
+}
+
+/* ============================================
+   Item card — 單一行程項目
+   ============================================ */
+.item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.item .row1 {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.item .time {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mountain);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  min-width: 88px;
+}
+.item .title {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+  line-height: 1.4;
+}
+.item .note {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  margin-left: 100px;
+  line-height: 1.5;
+}
+.item .links {
+  margin-top: 8px;
+  margin-left: 100px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.item .links a {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 8px;
+  background: var(--mountain-soft);
+  color: var(--mountain);
+  border-radius: 6px;
+  text-decoration: none;
+}
+.item .links a.phone {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .item .note,
+  .item .links {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}
+
+/* 高亮 / 景點 */
+.item.highlight {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(to right, #fffaf8, var(--card) 80%);
+}
+
+/* 餐廳 */
+.item.meal {
+  border-left: 4px solid var(--meal);
+  background: linear-gradient(to right, #faf3f8, var(--card) 80%);
+}
+
+/* ============================================
+   Transport — 交通段
+   ============================================ */
+.transit {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 4px 0 4px 12px;
+  padding: 8px 12px;
+  background: var(--mountain-soft);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--mountain);
+}
+.transit .ico {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.transit .route {
+  flex: 1;
+  line-height: 1.4;
+}
+.transit .duration {
+  font-size: 11px;
+  color: var(--mountain);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   Drive card — 自駕區段
+   ============================================ */
+.drive-card {
+  background: linear-gradient(135deg, #fff5e6 0%, #fef0d9 100%);
+  border: 1px solid #f0d4a0;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 14px 0;
+}
+.drive-card .dc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8b5a1c;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.drive-card .dc-route {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.drive-card .dc-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.drive-card a.nav-btn {
+  display: inline-block;
+  background: #c97c1e;
+  color: #fff;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+.drive-card a.nav-btn:hover {
+  background: #a8631a;
+  text-decoration: none;
+}
+
+/* ============================================
+   Notice / 提醒
+   ============================================ */
+.notice {
+  background: var(--warn-soft);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.notice strong { color: var(--warn); }
+.notice > strong { display: block; margin-bottom: 4px; }
+.notice ul { margin: 4px 0; padding-left: 20px; }
+.notice li { margin: 2px 0; }
+.notice-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.notice.ok {
+  background: var(--ok-soft);
+  border-left-color: var(--ok);
+}
+.notice.ok strong { color: var(--ok); }
+
+/* ============================================
+   Route Map / 路線示意圖
+   ============================================ */
+.route-map {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin: 12px 0;
+}
+.route-map-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mountain);
+  margin-bottom: 8px;
+}
+.route-map img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================
+   Badges
+   ============================================ */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.04em;
+}
+.badge.star { background: #fff3d0; color: var(--star); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.book { background: var(--accent-soft); color: var(--accent); }
+.badge.meal { background: #e4e9f2; color: #4a5e87; }
+
+/* ============================================
+   Reservation list (used in summary)
+   ============================================ */
+.reserve-table {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 4px 0;
+  margin: 10px 0;
+}
+.reserve-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  align-items: baseline;
+}
+.reserve-row:last-child { border-bottom: 0; }
+.reserve-row .r-date {
+  font-weight: 700;
+  color: var(--mountain);
+  font-variant-numeric: tabular-nums;
+  min-width: 50px;
+}
+.reserve-row .r-info { flex: 1; }
+.reserve-row .r-phone {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ============================================
+   Packing / Shopping pages
+   ============================================ */
+.pack-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 22px 0 10px;
+  padding: 8px 14px;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  scroll-margin-top: 80px;
+}
+.checklist {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.checklist h3 {
+  font-size: 15px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.checklist h3 .count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+.checklist label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 0;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px dashed transparent;
+  transition: color 0.15s;
+}
+.checklist label:hover { background: rgba(0, 0, 0, 0.015); }
+.checklist input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.checklist input[type="checkbox"]:checked + .l-text {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.checklist .l-text { flex: 1; }
+.checklist .l-note {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.note-box {
+  background: var(--mountain-soft);
+  border-left: 4px solid var(--mountain);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 14px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 30px 14px 20px;
+  border-top: 1px solid var(--line);
+  margin-top: 40px;
+}
+
+/* ============================================
+   Back to top button
+   ============================================ */
+.to-top {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: var(--ink);
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 50;
+}
+.to-top.show { opacity: 0.9; }
+.to-top:hover { opacity: 1; text-decoration: none; }
+
+/* ============================================
+   Small adjustments
+   ============================================ */
+@media (max-width: 380px) {
+  main { padding: 16px 12px 50px; }
+  .item .time { min-width: 70px; font-size: 12px; }
+  .item .title { font-size: 14px; }
+  .day-header .d-theme { font-size: 17px; }
+}

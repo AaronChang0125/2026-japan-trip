@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="theme-color" content="#1a2332">
+<title>採買清單 ・ 北陸 + 東京 12 日</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="site-title">
+      <h1>採買清單</h1>
+      <span class="dates">名物 + 伴手禮</span>
+    </div>
+    <nav class="page-tabs">
+      <a href="index.html">行程</a>
+      <a href="packing.html">打包清單</a>
+      <a href="shopping.html" class="active">採買清單</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <h2>🛍 採買清單</h2>
+    <p class="sub">依路線順序整理 ・ 勾選後本機自動儲存</p>
+  </section>
+
+  <footer>
+    採買清單 ・ 12 日北陸 + 東京 ・ 2026.05.20–05.31
+  </footer>
+
+</main>
+
+<a href="#top" class="to-top" aria-label="回到最上">↑</a>
+
+<script>
+  const STORAGE_KEY = 'shopping-list-v1';
+  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+  document.querySelectorAll('.checklist').forEach(list => {
+    const key = list.dataset.key;
+    const boxes = list.querySelectorAll('input[type="checkbox"]');
+    const countEl = list.querySelector('.count');
+
+    boxes.forEach((box, i) => {
+      const id = `${key}-${i}`;
+      if (stored[id]) box.checked = true;
+      box.addEventListener('change', () => {
+        stored[id] = box.checked;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        updateCount();
+      });
+    });
+
+    function updateCount() {
+      const total = boxes.length;
+      const done = [...boxes].filter(b => b.checked).length;
+      countEl.textContent = `${done}/${total}`;
+    }
+    updateCount();
+  });
+
+  const toTop = document.querySelector('.to-top');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) toTop.classList.add('show');
+    else toTop.classList.remove('show');
+  }, { passive: true });
+</script>
+
+</body>
+</html>
