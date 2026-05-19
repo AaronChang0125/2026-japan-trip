@@ -989,6 +989,25 @@ main {
   margin: 0;
 }
 
+.sync-status {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  background: var(--mountain-soft);
+  color: var(--mountain);
+  font-weight: 600;
+}
+.sync-status.synced {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.sync-status.offline {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
 .note-box {
   background: var(--mountain-soft);
   border-left: 4px solid var(--mountain);

@@ -28,7 +28,7 @@
 
   <section class="hero">
     <h2>🛍 採買清單</h2>
-    <p class="sub">本機儲存 ・ 可自由新增 / 勾選 / 刪除</p>
+    <p class="sub">雲端即時同步 ・ 多裝置共用 <span id="sync-status" class="sync-status">連線中…</span></p>
   </section>
 
   <div class="shop-add">
@@ -51,7 +51,23 @@
 <button class="theme-toggle" id="theme-toggle" aria-label="切換明暗主題" type="button">🌙</button>
 <a href="#top" class="to-top" aria-label="回到最上">↑</a>
 
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBiosBfZhyq1EBvFJT4vGu5dGDLkH3qsYo",
+    authDomain: "japan-trip-e546d.firebaseapp.com",
+    projectId: "japan-trip-e546d",
+    storageBucket: "japan-trip-e546d.firebasestorage.app",
+    messagingSenderId: "294987809115",
+    appId: "1:294987809115:web:c51ffe435e2e9b9c5a1a7e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const docRef = doc(db, 'lists', 'shared');
+
   const STORAGE_KEY = 'shopping-list-v2';
   // items: [{ id: string, text: string, done: boolean }]
   let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -61,13 +77,48 @@
   const itemsEl = document.getElementById('shop-items');
   const emptyEl = document.getElementById('shop-empty');
   const countEl = document.querySelector('.checklist .count');
+  const syncEl = document.getElementById('sync-status');
+
+  function setSyncStatus(state) {
+    if (!syncEl) return;
+    if (state === 'synced') {
+      syncEl.textContent = '✓ 已同步';
+      syncEl.className = 'sync-status synced';
+    } else if (state === 'connecting') {
+      syncEl.textContent = '連線中…';
+      syncEl.className = 'sync-status';
+    } else if (state === 'offline') {
+      syncEl.textContent = '⚠ 離線(本機)';
+      syncEl.className = 'sync-status offline';
+    }
+  }
+
+  function saveLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  async function saveRemote() {
+    try {
+      await setDoc(docRef, { items, updatedAt: serverTimestamp() });
+    } catch (e) {
+      console.warn('Firestore save failed:', e);
+      setSyncStatus('offline');
+    }
+  }
 
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    saveLocal();
+    saveRemote();
   }
 
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
   }
 
   function render() {
@@ -90,12 +141,6 @@
     const total = items.length;
     const done = items.filter(i => i.done).length;
     countEl.textContent = total > 0 ? `${done}/${total}` : '';
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[c]);
   }
 
   function addItem() {
@@ -134,7 +179,28 @@
     }
   });
 
+  // Render local cache first for fast initial paint
   render();
+  setSyncStatus('connecting');
+
+  // Subscribe to Firestore real-time updates
+  onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      if (data.items && Array.isArray(data.items)) {
+        items = data.items;
+        saveLocal();
+        render();
+      }
+    } else {
+      // Document doesn't exist yet — push local data to seed it
+      saveRemote();
+    }
+    setSyncStatus('synced');
+  }, (error) => {
+    console.warn('Firestore subscription error:', error);
+    setSyncStatus('offline');
+  });
 
   // Theme toggle
   const themeToggle = document.getElementById('theme-toggle');
