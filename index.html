@@ -17,6 +17,11 @@
       <h1>北陸 + 東京 12 日</h1>
       <span class="dates">2026.05.20–05.31</span>
     </div>
+    <nav class="page-tabs">
+      <a href="index.html" class="active">行程</a>
+      <a href="packing.html">打包清單</a>
+      <a href="shopping.html">採買清單</a>
+    </nav>
     <div class="day-nav-v4" aria-label="每日行程">
       <div class="day-row">
         <div class="day-cells">
@@ -63,12 +68,6 @@
         </div>
       </div>
     </div>
-
-        <nav class="page-tabs">
-      <a href="index.html" class="active">行程</a>
-      <a href="packing.html">打包清單</a>
-      <a href="shopping.html">採買清單</a>
-    </nav>
   </div>
 </header>
 
@@ -1990,6 +1989,25 @@
     if (window.scrollY > 400) toTop.classList.add('show');
     else toTop.classList.remove('show');
   }, { passive: true });
+
+  // On page load: focus today's day section (or Day 1 if outside trip range)
+  (function focusToday() {
+    if (window.location.hash) return; // user clicked a specific link
+    const tripStart = new Date(2026, 4, 20); // 5/20/2026 (month is 0-indexed)
+    const tripEnd = new Date(2026, 4, 31);   // 5/31/2026
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let targetDay = 1;
+    if (today >= tripStart && today <= tripEnd) {
+      const daysDiff = Math.round((today - tripStart) / 86400000);
+      targetDay = daysDiff + 1;
+    }
+    if (targetDay === 1) return; // already at top
+    const target = document.getElementById(`day-${targetDay}`);
+    if (target) {
+      setTimeout(() => target.scrollIntoView({ behavior: 'auto', block: 'start' }), 100);
+    }
+  })();
 
   // Scroll spy: highlight day cell of currently visible section
   const dayCells = document.querySelectorAll('.day-cell');

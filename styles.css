@@ -173,6 +173,9 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 12px;
 }
 
 .day-row {
