@@ -1025,10 +1025,17 @@ main {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px 6px;
+  padding: 4px;
   border-radius: 4px;
-  line-height: 1;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.shop-section .section-rename svg,
+.shop-section .section-delete svg {
+  display: block;
 }
 .shop-section .section-rename:hover {
   background: var(--mountain-soft);
@@ -1048,12 +1055,16 @@ main {
 }
 .shop-section .section-add-input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 16px;
   background: transparent;
   color: var(--ink);
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
 }
 .shop-section .section-add-input:focus {
   outline: none;
@@ -1071,9 +1082,13 @@ main {
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 1.2;
 }
 .shop-section-add button:hover {
   background: #a83b32;
