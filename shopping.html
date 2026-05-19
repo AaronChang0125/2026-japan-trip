@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="theme-color" content="#1a2332">
 <title>採買清單 ・ 北陸 + 東京 12 日</title>
+<script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,8 +28,19 @@
 
   <section class="hero">
     <h2>🛍 採買清單</h2>
-    <p class="sub">依路線順序整理 ・ 勾選後本機自動儲存</p>
+    <p class="sub">本機儲存 ・ 可自由新增 / 勾選 / 刪除</p>
   </section>
+
+  <div class="shop-add">
+    <input type="text" id="shop-input" placeholder="輸入新項目，按 Enter 或新增" autocomplete="off">
+    <button id="shop-add-btn" type="button">＋ 新增</button>
+  </div>
+
+  <div class="checklist" data-key="shop-custom">
+    <h3>🛒 我的採買清單 <span class="count"></span></h3>
+    <div id="shop-items"></div>
+    <p id="shop-empty" class="shop-empty">還沒有項目，從上面輸入框新增</p>
+  </div>
 
   <footer>
     採買清單 ・ 12 日北陸 + 東京 ・ 2026.05.20–05.31
@@ -36,35 +48,114 @@
 
 </main>
 
+<button class="theme-toggle" id="theme-toggle" aria-label="切換明暗主題" type="button">🌙</button>
 <a href="#top" class="to-top" aria-label="回到最上">↑</a>
 
 <script>
-  const STORAGE_KEY = 'shopping-list-v1';
-  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const STORAGE_KEY = 'shopping-list-v2';
+  // items: [{ id: string, text: string, done: boolean }]
+  let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
-  document.querySelectorAll('.checklist').forEach(list => {
-    const key = list.dataset.key;
-    const boxes = list.querySelectorAll('input[type="checkbox"]');
-    const countEl = list.querySelector('.count');
+  const input = document.getElementById('shop-input');
+  const addBtn = document.getElementById('shop-add-btn');
+  const itemsEl = document.getElementById('shop-items');
+  const emptyEl = document.getElementById('shop-empty');
+  const countEl = document.querySelector('.checklist .count');
 
-    boxes.forEach((box, i) => {
-      const id = `${key}-${i}`;
-      if (stored[id]) box.checked = true;
-      box.addEventListener('change', () => {
-        stored[id] = box.checked;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-        updateCount();
-      });
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function render() {
+    itemsEl.innerHTML = '';
+    items.forEach(item => {
+      const label = document.createElement('label');
+      label.className = 'shop-item';
+      label.innerHTML = `
+        <input type="checkbox" ${item.done ? 'checked' : ''} data-id="${item.id}">
+        <span class="l-text">${escapeHtml(item.text)}</span>
+        <button type="button" class="shop-del" data-id="${item.id}" aria-label="刪除">✕</button>
+      `;
+      itemsEl.appendChild(label);
     });
-
-    function updateCount() {
-      const total = boxes.length;
-      const done = [...boxes].filter(b => b.checked).length;
-      countEl.textContent = `${done}/${total}`;
-    }
+    emptyEl.style.display = items.length === 0 ? 'block' : 'none';
     updateCount();
+  }
+
+  function updateCount() {
+    const total = items.length;
+    const done = items.filter(i => i.done).length;
+    countEl.textContent = total > 0 ? `${done}/${total}` : '';
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  function addItem() {
+    const text = input.value.trim();
+    if (!text) return;
+    items.push({ id: uid(), text, done: false });
+    save();
+    render();
+    input.value = '';
+    input.focus();
+  }
+
+  addBtn.addEventListener('click', addItem);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addItem(); }
   });
 
+  itemsEl.addEventListener('change', e => {
+    if (e.target.type === 'checkbox') {
+      const id = e.target.dataset.id;
+      const item = items.find(i => i.id === id);
+      if (item) {
+        item.done = e.target.checked;
+        save();
+        updateCount();
+      }
+    }
+  });
+
+  itemsEl.addEventListener('click', e => {
+    if (e.target.classList.contains('shop-del')) {
+      const id = e.target.dataset.id;
+      items = items.filter(i => i.id !== id);
+      save();
+      render();
+    }
+  });
+
+  render();
+
+  // Theme toggle
+  const themeToggle = document.getElementById('theme-toggle');
+  function updateThemeIcon() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeToggle.textContent = isDark ? '☀' : '🌙';
+  }
+  updateThemeIcon();
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    }
+    updateThemeIcon();
+  });
+
+  // Back to top
   const toTop = document.querySelector('.to-top');
   window.addEventListener('scroll', () => {
     if (window.scrollY > 400) toTop.classList.add('show');
