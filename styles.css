@@ -143,7 +143,7 @@ a:hover { text-decoration: underline; }
 
 .theme-toggle {
   position: fixed;
-  bottom: 70px;
+  bottom: 18px;
   right: 18px;
   background: var(--btn-bg);
   color: #fff;
@@ -988,8 +988,95 @@ main {
   font-size: 13px;
   color: var(--muted);
   text-align: center;
-  padding: 20px 0;
+  padding: 30px 16px;
+  margin: 14px 0;
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+}
+
+/* Shopping sections */
+.shop-section .shop-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.shop-section .shop-section-name {
+  font-size: 15px;
+  font-weight: 700;
   margin: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shop-section .shop-section-name .count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.shop-section .section-rename,
+.shop-section .section-delete {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.shop-section .section-rename:hover {
+  background: var(--mountain-soft);
+  color: var(--mountain);
+}
+.shop-section .section-delete:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.shop-section .section-items {
+  margin: 4px 0;
+}
+.shop-section .section-add-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.shop-section .section-add-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: transparent;
+  color: var(--ink);
+}
+.shop-section .section-add-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--card);
+}
+
+.shop-section-add {
+  text-align: center;
+  margin: 18px 0;
+}
+.shop-section-add button {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.shop-section-add button:hover {
+  background: #a83b32;
 }
 
 .sync-status {
@@ -1039,7 +1126,7 @@ footer {
    ============================================ */
 .to-top {
   position: fixed;
-  bottom: 18px;
+  bottom: 70px;
   right: 18px;
   background: var(--btn-bg);
   color: #fff;

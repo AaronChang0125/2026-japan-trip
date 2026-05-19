@@ -28,7 +28,7 @@
 
   <section class="hero">
     <h2>🧳 打包清單</h2>
-    <p class="sub">勾選後會打勾劃線 ・ 重新整理頁面後狀態會保留(本機儲存)</p>
+    <p class="sub">雲端即時同步 ・ 多裝置共用 <span id="sync-status" class="sync-status">連線中…</span></p>
   </section>
 
   <div class="note-box">
@@ -163,32 +163,113 @@
 <button class="theme-toggle" id="theme-toggle" aria-label="切換明暗主題" type="button">🌙</button>
 <a href="#top" class="to-top" aria-label="回到最上">↑</a>
 
-<script>
-  // Persist checkbox state in localStorage per page
-  const STORAGE_KEY = 'packing-list-v1';
-  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+  const firebaseConfig = {
+    apiKey: "AIzaSyBiosBfZhyq1EBvFJT4vGu5dGDLkH3qsYo",
+    authDomain: "japan-trip-e546d.firebaseapp.com",
+    projectId: "japan-trip-e546d",
+    storageBucket: "japan-trip-e546d.firebasestorage.app",
+    messagingSenderId: "294987809115",
+    appId: "1:294987809115:web:c51ffe435e2e9b9c5a1a7e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const docRef = doc(db, 'lists', 'packing');
+
+  const STORAGE_KEY = 'packing-list-v1';
+  // checked: { 'pack-doc-0': true, 'pack-doc-1': false, ... }
+  let checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  let firstSnapshot = true;
+
+  const syncEl = document.getElementById('sync-status');
+  function setSyncStatus(state) {
+    if (!syncEl) return;
+    if (state === 'synced') {
+      syncEl.textContent = '✓ 已同步';
+      syncEl.className = 'sync-status synced';
+    } else if (state === 'connecting') {
+      syncEl.textContent = '連線中…';
+      syncEl.className = 'sync-status';
+    } else if (state === 'offline') {
+      syncEl.textContent = '⚠ 離線(本機)';
+      syncEl.className = 'sync-status offline';
+    }
+  }
+
+  function saveLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+  }
+
+  async function saveRemote() {
+    try {
+      await setDoc(docRef, { checked, updatedAt: serverTimestamp() });
+    } catch (e) {
+      console.warn('Firestore save failed:', e);
+      setSyncStatus('offline');
+    }
+  }
+
+  function save() {
+    saveLocal();
+    saveRemote();
+  }
+
+  function updateCount(list) {
+    const countEl = list.querySelector('.count');
+    if (!countEl) return;
+    const boxes = list.querySelectorAll('input[type="checkbox"]');
+    const total = boxes.length;
+    const done = [...boxes].filter(b => b.checked).length;
+    countEl.textContent = `${done}/${total}`;
+  }
+
+  // Bind all checkboxes — apply local state, attach change handlers
   document.querySelectorAll('.checklist').forEach(list => {
     const key = list.dataset.key;
     const boxes = list.querySelectorAll('input[type="checkbox"]');
-    const countEl = list.querySelector('.count');
-
     boxes.forEach((box, i) => {
       const id = `${key}-${i}`;
-      if (stored[id]) box.checked = true;
+      box.dataset.itemId = id;
+      if (checked[id]) box.checked = true;
       box.addEventListener('change', () => {
-        stored[id] = box.checked;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-        updateCount();
+        checked[id] = box.checked;
+        save();
+        updateCount(list);
       });
     });
+    updateCount(list);
+  });
 
-    function updateCount() {
-      const total = boxes.length;
-      const done = [...boxes].filter(b => b.checked).length;
-      countEl.textContent = `${done}/${total}`;
+  // Apply state from remote — update all checkboxes
+  function applyRemote() {
+    document.querySelectorAll('.checklist input[type="checkbox"]').forEach(box => {
+      const id = box.dataset.itemId;
+      box.checked = !!checked[id];
+    });
+    document.querySelectorAll('.checklist').forEach(list => updateCount(list));
+  }
+
+  setSyncStatus('connecting');
+  onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      if (data.checked && typeof data.checked === 'object') {
+        checked = data.checked;
+        saveLocal();
+        applyRemote();
+      }
+    } else if (firstSnapshot && Object.keys(checked).length > 0) {
+      saveRemote(); // seed from local on first connect
     }
-    updateCount();
+    firstSnapshot = false;
+    setSyncStatus('synced');
+  }, (error) => {
+    console.warn('Firestore subscription error:', error);
+    setSyncStatus('offline');
   });
 
   // Theme toggle

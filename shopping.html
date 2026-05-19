@@ -31,15 +31,11 @@
     <p class="sub">雲端即時同步 ・ 多裝置共用 <span id="sync-status" class="sync-status">連線中…</span></p>
   </section>
 
-  <div class="shop-add">
-    <input type="text" id="shop-input" placeholder="輸入新項目，按 Enter 或新增" autocomplete="off">
-    <button id="shop-add-btn" type="button">＋ 新增</button>
-  </div>
+  <div id="shop-sections"></div>
+  <p id="shop-empty" class="shop-empty">還沒有分類，點下方「＋ 新增分類」開始建立</p>
 
-  <div class="checklist" data-key="shop-custom">
-    <h3>🛒 我的採買清單 <span class="count"></span></h3>
-    <div id="shop-items"></div>
-    <p id="shop-empty" class="shop-empty">還沒有項目，從上面輸入框新增</p>
+  <div class="shop-section-add">
+    <button id="add-section-btn" type="button">＋ 新增分類</button>
   </div>
 
   <footer>
@@ -68,15 +64,19 @@
   const db = getFirestore(app);
   const docRef = doc(db, 'lists', 'shared');
 
-  const STORAGE_KEY = 'shopping-list-v2';
-  // items: [{ id: string, text: string, done: boolean }]
-  let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const STORAGE_KEY = 'shopping-list-v3';
+  // sections: [{ id, name, items: [{ id, text, done }] }]
+  let sections = [];
+  let firstSnapshot = true;
 
-  const input = document.getElementById('shop-input');
-  const addBtn = document.getElementById('shop-add-btn');
-  const itemsEl = document.getElementById('shop-items');
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try { sections = JSON.parse(stored); } catch(e) { sections = []; }
+  }
+
+  const sectionsEl = document.getElementById('shop-sections');
   const emptyEl = document.getElementById('shop-empty');
-  const countEl = document.querySelector('.checklist .count');
+  const addSectionBtn = document.getElementById('add-section-btn');
   const syncEl = document.getElementById('sync-status');
 
   function setSyncStatus(state) {
@@ -94,12 +94,12 @@
   }
 
   function saveLocal() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sections));
   }
 
   async function saveRemote() {
     try {
-      await setDoc(docRef, { items, updatedAt: serverTimestamp() });
+      await setDoc(docRef, { sections, updatedAt: serverTimestamp() });
     } catch (e) {
       console.warn('Firestore save failed:', e);
       setSyncStatus('offline');
@@ -116,70 +116,138 @@
   }
 
   function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, c => ({
+    return String(s).replace(/[&<>"']/g, c => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[c]);
   }
 
   function render() {
-    itemsEl.innerHTML = '';
-    items.forEach(item => {
-      const label = document.createElement('label');
-      label.className = 'shop-item';
-      label.innerHTML = `
-        <input type="checkbox" ${item.done ? 'checked' : ''} data-id="${item.id}">
-        <span class="l-text">${escapeHtml(item.text)}</span>
-        <button type="button" class="shop-del" data-id="${item.id}" aria-label="刪除">✕</button>
+    sectionsEl.innerHTML = '';
+    sections.forEach(section => {
+      const total = section.items.length;
+      const done = section.items.filter(i => i.done).length;
+
+      const card = document.createElement('div');
+      card.className = 'checklist shop-section';
+      card.dataset.sectionId = section.id;
+      card.innerHTML = `
+        <div class="shop-section-header">
+          <h3 class="shop-section-name">${escapeHtml(section.name)} <span class="count">${total > 0 ? done + '/' + total : ''}</span></h3>
+          <button type="button" class="section-rename" data-section-id="${section.id}" aria-label="改名">✎</button>
+          <button type="button" class="section-delete" data-section-id="${section.id}" aria-label="刪除分類">🗑</button>
+        </div>
+        <div class="section-items">
+          ${section.items.map(item => `
+            <label class="shop-item">
+              <input type="checkbox" ${item.done ? 'checked' : ''} data-section-id="${section.id}" data-item-id="${item.id}">
+              <span class="l-text">${escapeHtml(item.text)}</span>
+              <button type="button" class="shop-del" data-section-id="${section.id}" data-item-id="${item.id}" aria-label="刪除">✕</button>
+            </label>
+          `).join('')}
+        </div>
+        <div class="section-add-row">
+          <input type="text" class="section-add-input" placeholder="新項目，按 Enter 加入" data-section-id="${section.id}" autocomplete="off">
+        </div>
       `;
-      itemsEl.appendChild(label);
+      sectionsEl.appendChild(card);
     });
-    emptyEl.style.display = items.length === 0 ? 'block' : 'none';
-    updateCount();
+    emptyEl.style.display = sections.length === 0 ? 'block' : 'none';
   }
 
-  function updateCount() {
-    const total = items.length;
-    const done = items.filter(i => i.done).length;
-    countEl.textContent = total > 0 ? `${done}/${total}` : '';
-  }
-
-  function addItem() {
-    const text = input.value.trim();
-    if (!text) return;
-    items.push({ id: uid(), text, done: false });
+  function addSection() {
+    const name = prompt('輸入分類名稱（如：北陸名產、高山伴手禮）');
+    if (!name || !name.trim()) return;
+    sections.push({ id: uid(), name: name.trim(), items: [] });
     save();
     render();
-    input.value = '';
-    input.focus();
   }
 
-  addBtn.addEventListener('click', addItem);
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+  function renameSection(sectionId) {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    const name = prompt('改分類名稱', section.name);
+    if (!name || !name.trim()) return;
+    section.name = name.trim();
+    save();
+    render();
+  }
+
+  function deleteSection(sectionId) {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    const msg = section.items.length > 0
+      ? `「${section.name}」內有 ${section.items.length} 個項目，確定刪除整個分類？`
+      : `確定刪除分類「${section.name}」？`;
+    if (!confirm(msg)) return;
+    sections = sections.filter(s => s.id !== sectionId);
+    save();
+    render();
+  }
+
+  function addItem(sectionId, text) {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    if (!text || !text.trim()) return;
+    section.items.push({ id: uid(), text: text.trim(), done: false });
+    save();
+    render();
+  }
+
+  function toggleItem(sectionId, itemId, checked) {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    const item = section.items.find(i => i.id === itemId);
+    if (!item) return;
+    item.done = checked;
+    save();
+    // Re-render only the count for performance
+    const card = sectionsEl.querySelector(`[data-section-id="${sectionId}"]`);
+    if (card) {
+      const total = section.items.length;
+      const done = section.items.filter(i => i.done).length;
+      card.querySelector('.count').textContent = total > 0 ? done + '/' + total : '';
+    }
+  }
+
+  function deleteItem(sectionId, itemId) {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    section.items = section.items.filter(i => i.id !== itemId);
+    save();
+    render();
+  }
+
+  // Event delegation
+  addSectionBtn.addEventListener('click', addSection);
+
+  sectionsEl.addEventListener('click', e => {
+    const t = e.target;
+    if (t.classList.contains('section-rename')) {
+      renameSection(t.dataset.sectionId);
+    } else if (t.classList.contains('section-delete')) {
+      deleteSection(t.dataset.sectionId);
+    } else if (t.classList.contains('shop-del')) {
+      deleteItem(t.dataset.sectionId, t.dataset.itemId);
+    }
   });
 
-  itemsEl.addEventListener('change', e => {
-    if (e.target.type === 'checkbox') {
-      const id = e.target.dataset.id;
-      const item = items.find(i => i.id === id);
-      if (item) {
-        item.done = e.target.checked;
-        save();
-        updateCount();
+  sectionsEl.addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      toggleItem(e.target.dataset.sectionId, e.target.dataset.itemId, e.target.checked);
+    }
+  });
+
+  sectionsEl.addEventListener('keydown', e => {
+    if (e.target.classList.contains('section-add-input') && e.key === 'Enter') {
+      e.preventDefault();
+      const sectionId = e.target.dataset.sectionId;
+      const text = e.target.value;
+      if (text.trim()) {
+        addItem(sectionId, text);
       }
     }
   });
 
-  itemsEl.addEventListener('click', e => {
-    if (e.target.classList.contains('shop-del')) {
-      const id = e.target.dataset.id;
-      items = items.filter(i => i.id !== id);
-      save();
-      render();
-    }
-  });
-
-  // Render local cache first for fast initial paint
   render();
   setSyncStatus('connecting');
 
@@ -187,15 +255,20 @@
   onSnapshot(docRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.data();
-      if (data.items && Array.isArray(data.items)) {
-        items = data.items;
+      if (data.sections && Array.isArray(data.sections)) {
+        sections = data.sections;
         saveLocal();
         render();
+      } else if (data.items && Array.isArray(data.items) && sections.length === 0) {
+        // Migrate from old flat items array → put into 「未分類」section
+        sections = [{ id: uid(), name: '未分類', items: data.items }];
+        save();
+        render();
       }
-    } else {
-      // Document doesn't exist yet — push local data to seed it
+    } else if (firstSnapshot && sections.length > 0) {
       saveRemote();
     }
+    firstSnapshot = false;
     setSyncStatus('synced');
   }, (error) => {
     console.warn('Firestore subscription error:', error);
